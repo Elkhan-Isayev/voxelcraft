@@ -4,8 +4,8 @@
 
 ### A Minecraft-inspired voxel sandbox for the browser — built test-first, rendered in Three.js, playable in four languages.
 
-[![Play in your browser](https://img.shields.io/badge/▶_Play-in_your_browser-5d9c3a?style=for-the-badge)](https://elkhan-isayev.github.io/minecraft/)
-[![Build & Deploy](https://img.shields.io/github/actions/workflow/status/Elkhan-Isayev/minecraft/deploy.yml?branch=main&style=for-the-badge&label=tests%20%26%20deploy)](https://github.com/Elkhan-Isayev/minecraft/actions)
+[![Play in your browser](https://img.shields.io/badge/▶_Play-in_your_browser-5d9c3a?style=for-the-badge)](https://elkhan-isayev.github.io/voxelcraft/)
+[![Build & Deploy](https://img.shields.io/github/actions/workflow/status/Elkhan-Isayev/voxelcraft/deploy.yml?branch=main&style=for-the-badge&label=tests%20%26%20deploy)](https://github.com/Elkhan-Isayev/voxelcraft/actions)
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
 ![Three.js](https://img.shields.io/badge/Three.js-r170-000000?logo=threedotjs&logoColor=white)
@@ -100,7 +100,7 @@ Every texture is painted in code, pixel by pixel. Every sound — footsteps, blo
 
 ## 🚀 Getting started
 
-**Play instantly:** **[elkhan-isayev.github.io/minecraft](https://elkhan-isayev.github.io/minecraft/)** — runs in any modern desktop browser with WebGL (tested in Safari and Chromium).
+**Play instantly:** **[elkhan-isayev.github.io/voxelcraft](https://elkhan-isayev.github.io/voxelcraft/)** — runs in any modern desktop browser with WebGL (tested in Safari and Chromium).
 
 **Run it locally on a Mac:** double-click **`Play VoxelCraft.command`** in Finder. It installs dependencies on first launch, builds the game and opens it in your browser. *(First time only: right-click → Open to approve the script.)*
 
