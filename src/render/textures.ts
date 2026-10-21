@@ -1,4 +1,6 @@
 import { createRng, hashSeed, type Rng } from '../core/rng';
+import { decodeTile } from '../tools/texture-pipeline';
+import { GENERATED_TILES } from './tiles.generated';
 
 /** Procedural 16x16 pixel-art textures. Everything is drawn in code; no external assets. */
 
@@ -682,8 +684,13 @@ function ingot(): [number, number][] {
   return px;
 }
 
-/** Paints a tile by name. Returns 16*16 RGBA pixels (row 0 = top). */
+/**
+ * Returns a tile by name as 16*16 RGBA pixels (row 0 = top). Textures generated from the
+ * Higgsfield sheets win; the procedural painters remain as a fallback (and for crack overlays).
+ */
 export function paintTile(name: string): Uint8ClampedArray {
+  const generated = GENERATED_TILES[name];
+  if (generated) return decodeTile(generated);
   const img = new Img();
   const rng = createRng(hashSeed(name));
   const toolMatch = /^(wooden|stone|iron|golden|diamond|netherite)_(pickaxe|axe|shovel|sword)$/.exec(name);
@@ -695,5 +702,5 @@ export function paintTile(name: string): Uint8ClampedArray {
 }
 
 export function hasPainter(name: string): boolean {
-  return name in PAINTERS || /^(wooden|stone|iron|golden|diamond|netherite)_(pickaxe|axe|shovel|sword)$|^destroy_\d$/.test(name);
+  return name in GENERATED_TILES || name in PAINTERS || /^(wooden|stone|iron|golden|diamond|netherite)_(pickaxe|axe|shovel|sword)$|^destroy_\d$/.test(name);
 }

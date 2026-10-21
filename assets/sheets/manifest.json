@@ -1,0 +1,41 @@
+{
+  "comment": "Texture sheets generated with Higgsfield (gpt_image_2_5). Cells are listed row by row; null skips a cell. Run `npm run textures` after editing.",
+  "sheets": [
+    { "file": "blocks-01.png", "grid": 3, "fit": "cell", "cells": ["grass_block_top", "dirt", "stone", "cobblestone", "oak_planks", "oak_log", "sand", "gravel", "diamond_ore"] },
+    { "file": "blocks-02.png", "grid": 3, "fit": "cell", "cells": ["oak_log_top", "grass_block_side", "bedrock", "coal_ore", "iron_ore", "gold_ore", "copper_ore", "deepslate", "deepslate_top"] },
+    { "file": "blocks-03.png", "grid": 3, "fit": "cell", "cells": ["cobbled_deepslate", "tuff", "snow_block", "grass_block_snow", "cactus_top", "sandstone_top", "sandstone", "birch_log", "birch_log_top"] },
+    { "file": "blocks-04.png", "grid": 3, "fit": "cell", "cells": ["birch_planks", "spruce_log", "spruce_log_top", "spruce_planks", "cherry_log", "cherry_log_top", "cherry_planks", "crafting_table_top", "crafting_table_side"] },
+    { "file": "blocks-05.png", "grid": 3, "fit": "cell", "cells": ["crafting_table_front", "furnace_top", "furnace_side", "furnace_front", "chest_top", "chest_side", "chest_front", "bricks", "stone_bricks"] },
+    { "file": "blocks-06.png", "grid": 3, "fit": "cell", "cells": ["obsidian", "white_wool", "bookshelf", "mud", "copper_block", "amethyst_block", "glowstone", "iron_block", "gold_block"] },
+    { "file": "blocks-07.png", "grid": 3, "fit": "cell", "cells": ["diamond_block", "coal_block", "moss_block", "deepslate_iron_ore", "deepslate_diamond_ore", "clay", "tnt_top", "tnt_bottom", "tnt_side"] },
+    {
+      "file": "blocks-08.png", "grid": 2, "fit": "cell",
+      "cells": [{ "name": "water", "alpha": 170 }, { "name": "lava", "alpha": 240 }, { "name": "ice", "alpha": 210 }, "cactus_side"]
+    },
+    {
+      "file": "cutout-01.png", "grid": 3, "key": true, "fit": "contain", "align": "bottom",
+      "cells": [
+        { "name": "oak_leaves", "fit": "crop" }, { "name": "birch_leaves", "fit": "crop" }, { "name": "spruce_leaves", "fit": "crop" },
+        { "name": "cherry_leaves", "fit": "crop" }, { "name": "glass", "fit": "crop" }, "torch",
+        "short_grass", "dandelion", "poppy"
+      ]
+    },
+    {
+      "file": "cutout-02.png", "grid": 3, "key": true, "fit": "contain",
+      "cells": [
+        { "name": "dead_bush", "align": "bottom" }, { "name": "pink_petals", "align": "bottom" }, { "name": "cornflower", "align": "bottom" },
+        "bucket", "water_bucket", "lava_bucket", "stick", "coal", "charcoal"
+      ]
+    },
+    { "file": "items-01.png", "grid": 3, "key": true, "fit": "contain", "cells": ["raw_iron", "raw_gold", "raw_copper", "iron_ingot", "gold_ingot", "copper_ingot", "diamond", "netherite_ingot", "brick"] },
+    { "file": "items-02.png", "grid": 3, "key": true, "fit": "contain", "cells": ["wheat", "apple", "bread", "porkchop", "cooked_porkchop", "beef", "cooked_beef", "mutton", "cooked_mutton"] },
+    { "file": "items-03.png", "grid": 3, "key": true, "fit": "contain", "cells": ["rotten_flesh", "leather", "gunpowder", "clay_ball", "wooden_pickaxe", "stone_pickaxe", "iron_pickaxe", "golden_pickaxe", "diamond_pickaxe"] },
+    { "file": "items-04.png", "grid": 3, "key": true, "fit": "contain", "cells": ["netherite_pickaxe", "wooden_axe", "stone_axe", "iron_axe", "golden_axe", "diamond_axe", "netherite_axe", "wooden_shovel", "stone_shovel"] },
+    { "file": "items-05.png", "grid": 3, "key": true, "fit": "contain", "cells": ["iron_shovel", "golden_shovel", "diamond_shovel", "netherite_shovel", "wooden_sword", "stone_sword", "iron_sword", "golden_sword", "diamond_sword"] },
+    { "file": "mobs-01.png", "grid": 3, "fit": "cell", "cells": ["pig_face", "pig_skin", "pig_snout", "cow_face", "cow_hide", "cow_leg", "sheep_face", "sheep_wool", "sheep_skin"] },
+    {
+      "file": "mobs-02.png", "grid": 3, "fit": "cell",
+      "cells": ["zombie_face", "zombie_skin", "zombie_shirt", "zombie_pants", "zombie_hair", "creeper_face", "creeper_skin", null, { "name": "netherite_sword", "key": true, "fit": "contain" }]
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import { allBlocks } from '../core/blocks';
 import { allItems } from '../core/items';
-import { TILE_NAMES, tileIndex, tileUV, ATLAS_COLS, buildAtlasPixels, TILE_SIZE, DESTROY_STAGES } from './atlas';
+import { TILE_NAMES, tileIndex, tileUV, ATLAS_COLS, buildAtlasPixels, TILE_SIZE, DESTROY_STAGES, MOB_TILES } from './atlas';
+import { GENERATED_TILES } from './tiles.generated';
 import { paintTile, hasPainter } from './textures';
 
 function alphaStats(px: Uint8ClampedArray) {
@@ -54,6 +55,29 @@ describe('texture atlas', () => {
     expect(size).toBe(ATLAS_COLS * TILE_SIZE);
     expect(Math.log2(size) % 1).toBe(0);
     expect(pixels.length).toBe(size * size * 4);
+  });
+});
+
+describe('generated textures (Higgsfield sheets)', () => {
+  test('every block, item and mob texture comes from the generated set', () => {
+    const procedural = TILE_NAMES.filter((n) => n !== 'missing' && !n.startsWith('destroy_') && !(n in GENERATED_TILES));
+    expect(procedural).toEqual([]);
+  });
+
+  test('mob skins are part of the atlas', () => {
+    for (const t of ['pig_face', 'cow_hide', 'sheep_wool', 'zombie_face', 'creeper_face']) {
+      expect(MOB_TILES).toContain(t);
+      expect(TILE_NAMES).toContain(t);
+    }
+  });
+
+  test('every generated tile decodes to 16x16 RGBA', () => {
+    for (const name of Object.keys(GENERATED_TILES)) expect(paintTile(name).length, name).toBe(16 * 16 * 4);
+  });
+
+  test('items and plants have transparent backgrounds, full blocks do not', () => {
+    for (const name of ['diamond_pickaxe', 'apple', 'poppy', 'stick']) expect(alphaStats(paintTile(name)), name).toBeGreaterThan(0.2);
+    for (const name of ['stone', 'oak_planks', 'bricks', 'pig_face']) expect(alphaStats(paintTile(name)), name).toBe(0);
   });
 });
 

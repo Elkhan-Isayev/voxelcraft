@@ -6,6 +6,15 @@ export const TILE_SIZE = 16;
 export const ATLAS_COLS = 16;
 export const DESTROY_STAGES = 10;
 
+/** Skins for the box-shaped mob models. */
+export const MOB_TILES = [
+  'pig_face', 'pig_skin', 'pig_snout',
+  'cow_face', 'cow_hide', 'cow_leg',
+  'sheep_face', 'sheep_wool', 'sheep_skin',
+  'zombie_face', 'zombie_skin', 'zombie_shirt', 'zombie_pants', 'zombie_hair',
+  'creeper_face', 'creeper_skin',
+] as const;
+
 function collectNames(): string[] {
   const names = new Set<string>(['missing']);
   for (const b of allBlocks()) {
@@ -14,6 +23,7 @@ function collectNames(): string[] {
   }
   for (const i of allItems()) names.add(i.texture);
   for (let s = 0; s < DESTROY_STAGES; s++) names.add(`destroy_${s}`);
+  for (const t of MOB_TILES) names.add(t);
   return [...names];
 }
 
