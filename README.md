@@ -10,15 +10,16 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)
 ![Three.js](https://img.shields.io/badge/Three.js-r170-000000?logo=threedotjs&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-5-646cff?logo=vite&logoColor=white)
-![Vitest](https://img.shields.io/badge/Vitest-272_tests-6e9f18?logo=vitest&logoColor=white)
+![Vitest](https://img.shields.io/badge/Vitest-387_tests-6e9f18?logo=vitest&logoColor=white)
 ![Languages](https://img.shields.io/badge/i18n-EN_·_DE_·_AZ_·_RU-c97557)
-![Assets](https://img.shields.io/badge/assets-100%25_procedural-8662bf)
+![Textures](https://img.shields.io/badge/textures-generated_with_Higgsfield-8662bf)
+![Audio](https://img.shields.io/badge/music_%26_sound-synthesized_live-e07b39)
 
 <br>
 
-<img src="docs/screenshots/gameplay.jpg" alt="Terraced hills and a cherry grove in VoxelCraft" width="860">
+<img src="docs/screenshots/gameplay.jpg" alt="A pig, cow, sheep, zombie and creeper in a cherry grove, diamond sword in hand" width="860">
 
-<sub><i>Survival mode at noon — terraced hills rolling up into a cherry grove.</i></sub>
+<sub><i>Survival at noon in a cherry grove — and everybody came to say hello.</i></sub>
 
 </div>
 
@@ -31,7 +32,7 @@
 <td width="50%" valign="top">
 
 **🌍 An endless, seeded world**<br>
-Twelve biomes — from snowy peaks and spruce taiga to deserts, swamps and the 1.20 **cherry grove** — carved by spaghetti caves and cheese caverns, layered with deepslate and tuff, and seeded with coal, iron, copper, gold and diamond.
+Twelve biomes — from snowy peaks and spruce taiga to deserts, swamps and the 1.20 **cherry grove** — carved by spaghetti caves and cheese caverns, layered with deepslate and tuff, seeded with coal, iron, copper, gold and diamond, and washed by **water and lava that really flow** (pick them up with a bucket).
 
 </td>
 <td width="50%" valign="top">
@@ -58,14 +59,22 @@ Health, hunger and saturation, fall damage and drowning, tool tiers and break ti
 <tr>
 <td valign="top">
 
-**🎨 Zero external assets**<br>
-Every texture is painted in code, pixel by pixel. Every sound — footsteps, block breaks, explosions — is synthesized live with the Web Audio API. Nothing is copied from the original game.
+**🎨 Generated art, synthesized sound**<br>
+All 147 textures — blocks, items and mob skins — were generated for this project with **Higgsfield** and cut into crisp 16×16 tiles by a tested pipeline. Original piano music is composed on the fly, and every sound, from footsteps to a cow's moo, is synthesized live. Nothing is copied from the original game.
 
 </td>
 <td valign="top">
 
+**🗡️ Hands that feel right**<br>
+Held items are extruded into 3D from their own pixels, tools are gripped by the handle, and the hand follows Minecraft's swing, equip, eating and walking curves. Pigs, cows, sheep, zombies and creepers are textured box models with swinging limbs.
+
+</td>
+</tr>
+<tr>
+<td colspan="2" valign="top">
+
 **🧪 Built test-first**<br>
-272 unit tests across 19 suites pin down terrain, light, physics, crafting, mobs, saving and the full game loop. The whole suite runs in about four seconds.
+387 unit tests across 25 suites pin down terrain, light, fluids, physics, crafting, mobs, the texture pipeline, hand animation, music, saving and the full game loop. The whole suite runs in a few seconds.
 
 </td>
 </tr>
@@ -91,10 +100,16 @@ Every texture is painted in code, pixel by pixel. Every sound — footsteps, blo
 <td align="center"><sub>The creative inventory — in Russian</sub></td>
 </tr>
 <tr>
-<td colspan="2"><img src="docs/screenshots/sunset.jpg" alt="Sunset over snowy spruce hills"></td>
+<td colspan="2"><img src="docs/screenshots/sunset.jpg" alt="Sunset over snowy spruce hills, iron pickaxe in hand"></td>
 </tr>
 <tr>
 <td colspan="2" align="center"><sub>Sunset over the snowy taiga</sub></td>
+</tr>
+<tr>
+<td colspan="2"><img src="docs/screenshots/textures.png" alt="The complete texture atlas: blocks, plants, items, tools and mob skins"></td>
+</tr>
+<tr>
+<td colspan="2" align="center"><sub>Every texture in the game — generated with Higgsfield, sampled down to 16×16</sub></td>
 </tr>
 </table>
 
@@ -112,6 +127,7 @@ npm run dev        # start the dev server and open the game
 npm test           # run the unit-test suite
 npm run build      # type-check and produce an optimized build in dist/
 npm run preview    # serve the production build
+npm run textures   # rebuild the 16×16 tiles from assets/sheets
 ```
 
 ## 🎮 Controls
@@ -152,10 +168,10 @@ A test guarantees that all four dictionaries contain exactly the same keys and p
 
 | | |
 | :--- | :--- |
-| **Blocks** | 63 — stone, deepslate, tuff, four wood types, ores and their deepslate variants, copper and amethyst blocks, glass, ice, glowstone, TNT, flowers, pink petals… |
-| **Items** | 109 — 24 tools across six tiers (wood → netherite), ingots, raw ores, food |
+| **Blocks** | 60+ — stone, deepslate, tuff, four wood types, ores and their deepslate variants, copper and amethyst blocks, glass, ice, glowstone, TNT, flowers, pink petals, flowing water and lava… |
+| **Items** | 112 — 24 tools across six tiers (wood → netherite), ingots, raw ores, food, buckets |
 | **Biomes** | Ocean · beach · plains · forest · birch forest · desert · taiga · snowy plains · snowy peaks · windswept hills · cherry grove · swamp |
-| **Creatures** | Pig · cow · sheep · zombie · creeper |
+| **Creatures** | Pig · cow · sheep · zombie · creeper — textured, animated, and each with its own voice |
 | **World** | 128 blocks tall, streamed in 16×16 chunks around the player, with player edits and containers saved per world |
 
 ## 🏗️ Under the hood
@@ -172,12 +188,13 @@ flowchart LR
     S["game/<br/>GameSession · inventory · crafting<br/>mining · furnace · mobs · saves"]
     M["render/mesher<br/>culling · AO · light"]
     L["i18n/<br/>en · de · az · ru"]
+    T["tools/<br/>texture pipeline"]
   end
   subgraph Shell["Browser shell"]
     direction TB
-    R["Three.js renderer<br/>sky · entities · hand"]
+    R["Three.js renderer<br/>sky · mobs · 3D hand"]
     U["DOM UI<br/>HUD · menus · inventories"]
-    A["Web Audio<br/>synthesized sounds"]
+    A["Web Audio<br/>generative music · sounds"]
   end
   App["app.ts<br/>state machine · input · game loop"]
   App --> S
@@ -187,12 +204,16 @@ flowchart LR
   S --> W & G & P
   R --> M
   U --> L
+  T -.->|build time| R
 ```
 
 - **`GameSession`** is the heart of the game: every player action — mining, placing, crafting, eating, fighting — goes through it, so the integration tests drive it exactly the way the UI does.
 - **Terrain** blends continentalness, erosion, temperature and humidity noise, then carves caves and places ores and trees per chunk — deterministic for a given seed and independent of load order.
 - **Lighting** is a breadth-first flood fill (sky light and block light in one packed byte per voxel) with incremental add and remove passes when blocks change, propagating across chunk borders.
 - **Meshing** copies each 16³ section plus a one-block border into flat arrays, then emits only visible faces, with ambient occlusion and per-vertex light. A custom GLSL shader applies daylight, warm torchlight and distance fog.
+- **Textures** start as 17 AI-generated sheets in `assets/sheets/`. `npm run textures` decodes them, samples the centre of every art pixel, keys out the magenta background and writes `src/render/tiles.generated.ts` — so tests run against the real textures.
+- **The hand** is pure math: a pose matrix per kind of held thing plus Minecraft's swing curve (`sin(p²π)`, `sin(√p·π)`), driven by an animator for swings, item swaps, eating and walking.
+- **Music** is composed, not recorded: seventh-chord progressions, a slow bass arpeggio and a sparse melody, major by day and minor at night, played on a small additive piano with reverb and spaced by minutes of silence.
 
 ### Performance
 
@@ -216,19 +237,22 @@ Every gameplay module was written red → green: a failing test first, then the 
 | `world/light` | Sunlight and shadows · torch falloff · light removal · walls · cross-chunk propagation · water dimming |
 | `physics` | Gravity · fall distance · walk/sprint/sneak speeds · jump height · wall sliding · no tunnelling · ceilings · edge sneaking · swimming · flying · raycasts · bad time steps |
 | `game` | Inventory and slot clicks · crafting · mining speed and drops · furnace · health, hunger and air · day cycle · mob AI, combat and spawning · explosions · saves · settings · a full `GameSession` integration suite |
-| `render` | Texture atlas · procedural textures · mesher culling, AO, light, water and plants · fast-path equivalence |
+| `render` | Texture atlas · every tile generated · mesher culling, AO, light, water and plants · fast-path equivalence · mob models · hand poses, swing, equip and eating · item extrusion |
+| `tools` | PNG decoding (all five row filters) · cell sampling · magenta keying · content cropping |
+| `audio` | Composer stays in key, major/minor by time of day, calm density and range · director spacing · mob voices by distance |
 | `i18n` | Identical keys and placeholders in all four languages · every block, item and biome is named · fallback · browser language detection |
 | `ui` · `input` | HUD icons · tooltips · death messages · shift-click routing · crafting results · creative search · keyboard state machine |
 
 ```bash
 npm test
-#  Test Files  19 passed (19)
-#       Tests  272 passed (272)
+#  Test Files  25 passed (25)
+#       Tests  387 passed (387)
 ```
 
 ## 🗺️ Roadmap
 
-- [ ] Flowing water and lava, plus buckets
+- [x] Flowing water and lava, plus buckets
+- [x] Generated textures, textured mobs, 3D held items, music
 - [ ] Slabs, stairs, doors and beds
 - [ ] Directional blocks (furnaces and chests that face the player)
 - [ ] Taller worlds (−64 to 320) and more biomes
@@ -237,7 +261,7 @@ npm test
 
 ## ⚖️ Disclaimer
 
-VoxelCraft is an independent fan project inspired by *Minecraft*. It is not affiliated with, endorsed by, or connected to Mojang Studios or Microsoft. *Minecraft* is a trademark of Mojang Synergies AB. All code, textures and sounds in this repository are original.
+VoxelCraft is an independent fan project inspired by *Minecraft*. It is not affiliated with, endorsed by, or connected to Mojang Studios or Microsoft. *Minecraft* is a trademark of Mojang Synergies AB. No files from the original game are used: the code is original, the textures were generated for this project with Higgsfield, and all music and sounds are synthesized in code.
 
 <div align="center">
 <br>
