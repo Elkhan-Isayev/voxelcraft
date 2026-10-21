@@ -421,6 +421,7 @@ export class App {
         break;
       case 'eat':
         this.sounds.play('eat');
+        this.renderer.eat();
         break;
       case 'mobHurt':
         this.sounds.play('hit');

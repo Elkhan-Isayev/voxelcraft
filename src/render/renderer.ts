@@ -102,6 +102,11 @@ export class GameRenderer {
     this.hand.swingArm();
   }
 
+  /** Plays the eating animation on the held food. */
+  eat(): void {
+    this.hand.eat();
+  }
+
   render(dt: number, opts: RenderOptions, walking: boolean, sprinting: boolean, meshBudgetMs = 6, showHand = true): void {
     const s = this.session;
     if (!s || !this.chunks) return;

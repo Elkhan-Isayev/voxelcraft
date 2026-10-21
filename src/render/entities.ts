@@ -5,28 +5,15 @@ import type { World } from '../core/world';
 import type { Mob, MobType } from '../game/mobs';
 import type { ItemEntity, PrimedTnt } from '../game/session';
 import { DESTROY_STAGES, tileIndex, tileUV } from './atlas';
+import { mobParts } from './mob-models';
 import { lightBrightness } from './materials';
 
 const FACE_SHADE = [0.6, 0.6, 1, 0.5, 0.8, 0.8];
 
-/** Box with per-face shading baked into vertex colors. */
-function coloredBox(w: number, h: number, d: number, color: string, x: number, y: number, z: number): THREE.BufferGeometry {
-  const g = new THREE.BoxGeometry(w, h, d).toNonIndexed();
-  g.translate(x, y, z);
-  const base = new THREE.Color(color);
-  const colors: number[] = [];
-  const count = g.getAttribute('position').count;
-  for (let i = 0; i < count; i++) {
-    const s = FACE_SHADE[Math.floor(i / 6)];
-    colors.push(base.r * s, base.g * s, base.b * s);
-  }
-  g.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-  return g;
-}
-
 /** Box whose 6 faces show atlas tiles (order: +X, -X, +Y, -Y, +Z, -Z). */
-export function tiledBox(size: number, tiles: number[]): THREE.BufferGeometry {
-  const g = new THREE.BoxGeometry(size, size, size);
+export function tiledBox(size: number | [number, number, number], tiles: number[]): THREE.BufferGeometry {
+  const [w, h, d] = typeof size === 'number' ? [size, size, size] : size;
+  const g = new THREE.BoxGeometry(w, h, d);
   const uv = g.getAttribute('uv') as THREE.BufferAttribute;
   for (let f = 0; f < 6; f++) {
     const [u0, v0, u1, v1] = tileUV(tiles[f]);
@@ -61,79 +48,32 @@ interface MobModel {
   root: THREE.Group;
   material: THREE.MeshBasicMaterial;
   legs: THREE.Object3D[];
-  head?: THREE.Object3D;
+  arms: THREE.Object3D[];
 }
 
-function part(geo: THREE.BufferGeometry, mat: THREE.Material, pivot?: [number, number, number]): THREE.Object3D {
-  const mesh = new THREE.Mesh(geo, mat);
-  if (!pivot) return mesh;
-  const g = new THREE.Group();
-  g.position.set(...pivot);
-  mesh.position.set(-pivot[0], -pivot[1], -pivot[2]);
-  g.add(mesh);
-  return g;
-}
-
-function buildMob(type: MobType): MobModel {
-  const mat = new THREE.MeshBasicMaterial({ vertexColors: true });
+/** Builds a textured box model from the pure part description in mob-models.ts. */
+function buildMob(type: MobType, atlas: THREE.Texture): MobModel {
+  const material = new THREE.MeshBasicMaterial({ map: atlas, vertexColors: true, alphaTest: 0.5 });
   const root = new THREE.Group();
   const legs: THREE.Object3D[] = [];
-  const add = (o: THREE.Object3D) => (root.add(o), o);
-  const leg = (w: number, h: number, x: number, z: number, color: string) => {
-    const l = part(coloredBox(w, h, w, color, x, h / 2, z), mat, [x, h, z]);
-    legs.push(add(l));
-  };
-  const eyes = (y: number, z: number, spread: number, size = 0.08, color = '#1a1a1a') => {
-    add(part(coloredBox(size, size, 0.02, color, -spread, y, z), mat));
-    add(part(coloredBox(size, size, 0.02, color, spread, y, z), mat));
-  };
-
-  switch (type) {
-    case 'pig':
-      add(part(coloredBox(0.6, 0.5, 0.9, '#f0a5a2', 0, 0.55, 0), mat));
-      add(part(coloredBox(0.5, 0.5, 0.45, '#f0a5a2', 0, 0.72, -0.62), mat));
-      add(part(coloredBox(0.26, 0.18, 0.06, '#e07f80', 0, 0.64, -0.86), mat));
-      eyes(0.8, -0.85, 0.15);
-      for (const [x, z] of [[-0.18, -0.3], [0.18, -0.3], [-0.18, 0.3], [0.18, 0.3]]) leg(0.2, 0.3, x, z, '#e8958f');
-      break;
-    case 'cow':
-      add(part(coloredBox(0.7, 0.6, 1.0, '#4b3a2a', 0, 0.85, 0), mat));
-      add(part(coloredBox(0.72, 0.3, 0.4, '#e8e4dc', 0, 0.95, 0.15), mat));
-      add(part(coloredBox(0.5, 0.45, 0.35, '#4b3a2a', 0, 1.1, -0.66), mat));
-      add(part(coloredBox(0.36, 0.2, 0.06, '#d8c8b8', 0, 0.95, -0.85), mat));
-      add(part(coloredBox(0.08, 0.15, 0.08, '#e8e0d0', -0.3, 1.35, -0.66), mat));
-      add(part(coloredBox(0.08, 0.15, 0.08, '#e8e0d0', 0.3, 1.35, -0.66), mat));
-      eyes(1.15, -0.84, 0.15);
-      for (const [x, z] of [[-0.22, -0.35], [0.22, -0.35], [-0.22, 0.35], [0.22, 0.35]]) leg(0.2, 0.55, x, z, '#3a2c20');
-      break;
-    case 'sheep':
-      add(part(coloredBox(0.65, 0.6, 0.95, '#ececec', 0, 0.85, 0), mat));
-      add(part(coloredBox(0.38, 0.38, 0.42, '#d6c7b2', 0, 1.1, -0.6), mat));
-      add(part(coloredBox(0.44, 0.2, 0.3, '#ececec', 0, 1.3, -0.55), mat));
-      eyes(1.15, -0.82, 0.11);
-      for (const [x, z] of [[-0.2, -0.32], [0.2, -0.32], [-0.2, 0.32], [0.2, 0.32]]) leg(0.18, 0.55, x, z, '#d6c7b2');
-      break;
-    case 'zombie': {
-      for (const x of [-0.125, 0.125]) leg(0.25, 0.75, x, 0, '#3b3e8c');
-      add(part(coloredBox(0.5, 0.75, 0.25, '#2f8a8a', 0, 1.125, 0), mat));
-      for (const x of [-0.375, 0.375]) {
-        const arm = part(coloredBox(0.25, 0.75, 0.25, '#4f8a3a', x, 1.125, 0), mat, [x, 1.4, 0]);
-        arm.rotation.x = Math.PI / 2;
-        add(arm);
-      }
-      const head = add(part(coloredBox(0.5, 0.5, 0.5, '#4f8a3a', 0, 1.75, 0), mat));
-      eyes(1.78, -0.26, 0.11, 0.1, '#1a2a12');
-      return { root, material: mat, legs, head };
+  const arms: THREE.Object3D[] = [];
+  for (const p of mobParts(type)) {
+    const mesh = new THREE.Mesh(tiledBox(p.size, p.faces.map(tileIndex)), material);
+    if (!p.pivot) {
+      mesh.position.set(...p.center);
+      root.add(mesh);
+      continue;
     }
-    case 'creeper':
-      for (const [x, z] of [[-0.125, -0.2], [0.125, -0.2], [-0.125, 0.2], [0.125, 0.2]]) leg(0.25, 0.375, x, z, '#3f9a33');
-      add(part(coloredBox(0.5, 0.75, 0.3, '#4caf3d', 0, 0.75, 0), mat));
-      add(part(coloredBox(0.5, 0.5, 0.5, '#55b845', 0, 1.375, 0), mat));
-      eyes(1.47, -0.26, 0.12, 0.12, '#101010');
-      add(part(coloredBox(0.12, 0.2, 0.02, '#101010', 0, 1.3, -0.26), mat));
-      break;
+    const joint = new THREE.Group();
+    joint.position.set(...p.pivot);
+    mesh.position.set(p.center[0] - p.pivot[0], p.center[1] - p.pivot[1], p.center[2] - p.pivot[2]);
+    joint.rotation.x = p.rotX ?? 0;
+    joint.userData.rest = joint.rotation.x;
+    joint.add(mesh);
+    root.add(joint);
+    (p.kind === 'arm' ? arms : legs).push(joint);
   }
-  return { root, material: mat, legs };
+  return { root, material, legs, arms };
 }
 
 // ---- entity renderer -----------------------------------------------------------
@@ -160,7 +100,7 @@ export class EntityRenderer {
   readonly cracks: THREE.Mesh;
   private crackStage = -1;
 
-  constructor(atlas: THREE.Texture) {
+  constructor(private readonly atlas: THREE.Texture) {
     this.itemMaterial = new THREE.MeshBasicMaterial({ map: atlas, alphaTest: 0.5, side: THREE.DoubleSide, vertexColors: true });
     this.tntMaterial = new THREE.MeshBasicMaterial({ map: atlas, vertexColors: true });
     this.particleMaterial = new THREE.MeshBasicMaterial({ map: atlas, alphaTest: 0.5, side: THREE.DoubleSide });
@@ -214,14 +154,16 @@ export class EntityRenderer {
       alive.add(m.id);
       let model = this.mobModels.get(m.id);
       if (!model) {
-        model = buildMob(m.type);
+        model = buildMob(m.type, this.atlas);
         this.mobModels.set(m.id, model);
         this.group.add(model.root);
       }
       model.root.position.set(m.body.x, m.body.y, m.body.z);
       model.root.rotation.y = m.yaw;
       const swing = Math.sin(m.walkAnim * 4) * 0.7;
+      // Diagonal leg pairs move together, like a walking quadruped; arms sway gently.
       model.legs.forEach((leg, i) => (leg.rotation.x = (i % 2 === 0) !== (i >= 2) ? swing : -swing));
+      model.arms.forEach((arm, i) => (arm.rotation.x = arm.userData.rest + Math.sin(m.walkAnim * 4 + i * Math.PI) * 0.12));
       const b = this.brightnessAt(world, m.body.x, m.body.y + m.body.height * 0.8, m.body.z, daylight);
       if (m.hurtTime > 0) model.material.color.setRGB(b * 1.4, b * 0.35, b * 0.35);
       else if (m.fuse > 0 && Math.floor(m.fuse * 8) % 2 === 0) model.material.color.setScalar(Math.min(2.2, b * 2.5));
