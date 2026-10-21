@@ -372,6 +372,16 @@ const PAINTERS: Record<string, Painter> = {
     }
     return img;
   },
+  lava: (img, rng) => {
+    noise(img, rng, ['#d4500e', '#e0620f', '#c8420c', '#e8701a']);
+    // Bright molten veins and a few dark crust specks.
+    for (let i = 0; i < 7; i++) {
+      const x = Math.floor(rng() * 13);
+      const y = Math.floor(rng() * 16);
+      for (let k = 0; k < 3 + Math.floor(rng() * 3); k++) img.set(x + k, y, hex(rng() < 0.5 ? '#ffb02e' : '#ffd25a'));
+    }
+    return specks(img, rng, ['#8a2a06', '#a3360a'], 5, 1);
+  },
   sand: (img, rng) => noise(img, rng, ['#dbd3a0', '#e3dbb0', '#d6cd97', '#cfc58c', '#e8e0b8']),
   gravel: (img, rng) => cells(img, rng, ['#837f7e', '#9a9391', '#6e6a69', '#a89f9a', '#5c5857'], 14, 0.75),
   clay: (img, rng) => noise(img, rng, ['#a2a6b6', '#9a9eae', '#a9adbd', '#9296a6']),
@@ -643,7 +653,28 @@ const PAINTERS: Record<string, Painter> = {
   leather: (img, rng) => sprite(img, blob(7.5, 8, 6, 6), shaded('#8a4f2a', rng, 1.2)),
   gunpowder: (img, rng) => sprite(img, blob(7.5, 10, 6, 3.5), shaded('#5a5a5a', rng, 1.3, 7, 9)),
   clay_ball: (img, rng) => sprite(img, blob(7.5, 8, 4.5, 4.5), shaded('#a2a6b6', rng)),
+  bucket: (img, rng) => bucket(img, rng, null),
+  water_bucket: (img, rng) => bucket(img, rng, ['#2f5fd8', '#3a6fe6', '#5a8cf0']),
+  lava_bucket: (img, rng) => bucket(img, rng, ['#e0620f', '#ffb02e', '#d4500e']),
 };
+
+/** An iron bucket seen from the front, optionally filled with a fluid. */
+function bucket(img: Img, rng: Rng, fill: string[] | null): Img {
+  const px: [number, number][] = [];
+  for (let y = 4; y <= 13; y++) {
+    const inset = Math.floor((y - 4) / 3);
+    for (let x = 3 + inset; x <= 12 - inset; x++) px.push([x, y]);
+  }
+  sprite(img, px, shaded('#c8c8c8', rng, 1.3, 5, 6));
+  // Dark inner rim, or the fluid surface.
+  for (let x = 4; x <= 11; x++) img.set(x, 5, fill ? hex(pick(rng, fill)) : hex('#4a4a4a'));
+  if (fill) for (let x = 5; x <= 10; x++) img.set(x, 6, hex(pick(rng, fill)));
+  // Handle
+  for (let x = 4; x <= 11; x++) img.set(x, 2, hex('#7a7a7a'));
+  img.set(3, 3, hex('#7a7a7a'));
+  img.set(12, 3, hex('#7a7a7a'));
+  return img;
+}
 
 function ingot(): [number, number][] {
   const px: [number, number][] = [];

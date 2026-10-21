@@ -90,6 +90,7 @@ const de: Record<string, string> = {
   'death.mob': 'Du wurdest von {mob} getötet',
   'death.explosion': 'Du wurdest von {mob} in die Luft gesprengt',
   'death.void': 'Du bist aus der Welt gefallen',
+  'death.lava': 'Du hast versucht, in Lava zu schwimmen',
   'death.generic': 'Du bist gestorben',
 
   // ---- Kreaturen ----
@@ -174,6 +175,8 @@ const de: Record<string, string> = {
   'block.cornflower': 'Kornblume',
   'block.clay': 'Ton',
   'block.tnt': 'TNT',
+  'block.water': 'Wasser',
+  'block.lava': 'Lava',
 
   // ---- Gegenstände ----
   'item.stick': 'Stock',
@@ -201,6 +204,9 @@ const de: Record<string, string> = {
   'item.gunpowder': 'Schwarzpulver',
   'item.brick': 'Ziegel',
   'item.clay_ball': 'Tonklumpen',
+  'item.bucket': 'Eimer',
+  'item.water_bucket': 'Wassereimer',
+  'item.lava_bucket': 'Lavaeimer',
   'item.wooden_pickaxe': 'Holzspitzhacke',
   'item.wooden_axe': 'Holzaxt',
   'item.wooden_shovel': 'Holzschaufel',

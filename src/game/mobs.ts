@@ -1,4 +1,4 @@
-import { B } from '../core/blocks';
+import { B, getBlock } from '../core/blocks';
 import { I } from '../core/items';
 import type { Rng } from '../core/rng';
 import type { World } from '../core/world';
@@ -205,7 +205,7 @@ export function mobDrops(type: MobType, rng: Rng): ItemStack[] {
   return out;
 }
 
-const EXPLOSION_PROOF = new Set<number>([B.BEDROCK, B.OBSIDIAN, B.WATER]);
+const EXPLOSION_PROOF = new Set<number>([B.BEDROCK, B.OBSIDIAN]);
 
 /** Removes blocks within a sphere. Returns the positions and ids of removed blocks. */
 export function explode(world: World, x: number, y: number, z: number, power: number): { x: number; y: number; z: number; id: number }[] {
@@ -217,7 +217,7 @@ export function explode(world: World, x: number, y: number, z: number, power: nu
         const d = Math.hypot(bx + 0.5 - x, by + 0.5 - y, bz + 0.5 - z);
         if (d > power) continue;
         const id = world.getBlock(bx, by, bz);
-        if (id === B.AIR || EXPLOSION_PROOF.has(id)) continue;
+        if (id === B.AIR || EXPLOSION_PROOF.has(id) || getBlock(id).fluid) continue;
         world.setBlock(bx, by, bz, B.AIR);
         removed.push({ x: bx, y: by, z: bz, id });
       }

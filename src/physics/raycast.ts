@@ -1,4 +1,5 @@
 import { getBlock } from '../core/blocks';
+import { isFluidSource } from '../core/fluid';
 
 export interface Vec3 {
   x: number;
@@ -22,8 +23,13 @@ export interface BlockQuery {
   getBlock(x: number, y: number, z: number): number;
 }
 
+export interface RaycastOptions {
+  /** Also stop at water/lava source blocks (bucket targeting). */
+  fluidSources?: boolean;
+}
+
 /** Voxel traversal (Amanatides & Woo). Only hits blocks that are selectable. */
-export function raycast(world: BlockQuery, origin: Vec3, dir: Vec3, maxDistance: number): RayHit | null {
+export function raycast(world: BlockQuery, origin: Vec3, dir: Vec3, maxDistance: number, opts: RaycastOptions = {}): RayHit | null {
   let x = Math.floor(origin.x);
   let y = Math.floor(origin.y);
   let z = Math.floor(origin.z);
@@ -44,7 +50,7 @@ export function raycast(world: BlockQuery, origin: Vec3, dir: Vec3, maxDistance:
 
   while (t <= maxDistance) {
     const id = world.getBlock(x, y, z);
-    if (getBlock(id).selectable) return { x, y, z, nx, ny, nz, distance: t, block: id };
+    if (getBlock(id).selectable || (opts.fluidSources && isFluidSource(id))) return { x, y, z, nx, ny, nz, distance: t, block: id };
     if (tMaxX < tMaxY && tMaxX < tMaxZ) {
       x += stepX;
       t = tMaxX;

@@ -1,6 +1,7 @@
 import { B, getBlock } from '../core/blocks';
 import { DAY_LENGTH_TICKS, TICKS_PER_SECOND, toChunkCoord } from '../core/constants';
-import { getItem, isBlockItem } from '../core/items';
+import { isFluidSource, isLava, type FluidKind } from '../core/fluid';
+import { I, getItem, isBlockItem } from '../core/items';
 import { createRng, type Rng } from '../core/rng';
 import { World, type ChunkGenerator } from '../core/world';
 import {
@@ -12,6 +13,7 @@ import {
   type MoveInput,
 } from '../physics/player-physics';
 import { raycast, rayIntersectsBox, type RayHit, type Vec3 } from '../physics/raycast';
+import { FluidSimulator } from '../world/fluids';
 import { LightEngine } from '../world/light';
 import { TerrainGenerator } from '../world/terrain';
 import { daylight } from './daycycle';
@@ -56,6 +58,7 @@ export type SessionEvent =
   | { type: 'eat' }
   | { type: 'mobHurt'; mob: MobType }
   | { type: 'toolBroke' }
+  | { type: 'bucket'; fluid: FluidKind; filled: boolean }
   | { type: 'step' };
 
 export type ContainerState = { type: 'chest'; slots: Slot[] } | { type: 'furnace'; furnace: Furnace };
@@ -84,18 +87,23 @@ export interface SessionOptions {
   renderDistance?: number;
 }
 
-export type UseResult = 'placed' | 'opened' | 'ate' | 'ignited' | 'none';
+export type UseResult = 'placed' | 'filled' | 'opened' | 'ate' | 'ignited' | 'none';
 
 const CHEST_SIZE = 27;
 const SURVIVAL_REACH = 4.5;
 const CREATIVE_REACH = 5;
 const ENTITY_REACH = 3;
 const DESPAWN_DISTANCE = 96;
+/** Minecraft: lava deals 4 damage every half second. */
+const LAVA_DAMAGE = 4;
+const LAVA_DAMAGE_INTERVAL_TICKS = 10;
+const BUCKETS = new Set<number>([I.BUCKET, I.WATER_BUCKET, I.LAVA_BUCKET]);
 
 const posKey = (x: number, y: number, z: number) => `${x},${y},${z}`;
 
 export class GameSession {
   readonly world: World;
+  readonly fluids: FluidSimulator;
   readonly player: PlayerState;
   inventory = new Inventory();
   stats: Stats = createStats();
@@ -119,6 +127,7 @@ export class GameSession {
   private nextEntityId = 1;
   private creativeBreakCooldown = 0;
   private stepDistance = 0;
+  private lavaCooldown = 0;
 
   constructor(opts: SessionOptions) {
     const generator = opts.generator ?? new TerrainGenerator(opts.seed);
@@ -134,6 +143,11 @@ export class GameSession {
       created: Date.now(),
     };
 
+    this.fluids = new FluidSimulator(this.world, {
+      onWashAway: (x, y, z, id) => {
+        for (const d of getDrops(id, null, this.rng)) this.spawnItem(d, x + 0.5, y + 0.3, z + 0.5);
+      },
+    });
     this.world.onBlockChange((x, y, z, oldId, newId) => this.onBlockChanged(x, y, z, oldId, newId));
     this.world.onChunkUnload((c) => {
       this.mobs = this.mobs.filter((m) => toChunkCoord(m.body.x) !== c.cx || toChunkCoord(m.body.z) !== c.cz);
@@ -306,6 +320,8 @@ export class GameSession {
       if (opened !== 'none') return opened;
     }
 
+    if (held && BUCKETS.has(held.id)) return this.useBucket(held.id);
+
     if (held) {
       const def = getItem(held.id);
       if (def.food && (this.stats.food < 20 || this.gameMode === 'creative')) {
@@ -326,6 +342,41 @@ export class GameSession {
       }
     }
     return 'none';
+  }
+
+  /** Empty buckets scoop up a fluid source; full buckets pour one out. */
+  private useBucket(held: number): UseResult {
+    const survival = this.gameMode === 'survival';
+    if (held === I.BUCKET) {
+      const hit = raycast(this.world, this.eyePosition(), this.lookDirection(), this.reach(), { fluidSources: true });
+      if (!hit || !isFluidSource(hit.block)) return 'none';
+      const fluid: FluidKind = isLava(hit.block) ? 'lava' : 'water';
+      const filled = fluid === 'lava' ? I.LAVA_BUCKET : I.WATER_BUCKET;
+      this.world.setBlock(hit.x, hit.y, hit.z, B.AIR);
+      this.emit({ type: 'bucket', fluid, filled: true });
+      const slot = this.inventory.selected;
+      if (survival && this.inventory.slots[slot]!.count === 1) {
+        this.inventory.slots[slot] = { id: filled, count: 1 };
+      } else {
+        if (survival) this.inventory.consumeSelected();
+        if (survival || this.inventory.count(filled) === 0) {
+          const left = this.inventory.add({ id: filled, count: 1 });
+          if (left > 0) this.dropStack({ id: filled, count: left });
+        }
+      }
+      return 'filled';
+    }
+
+    const hit = this.target();
+    if (!hit) return 'none';
+    const target = getBlock(hit.block).replaceable ? hit : { x: hit.x + hit.nx, y: hit.y + hit.ny, z: hit.z + hit.nz };
+    const current = this.world.getBlock(target.x, target.y, target.z);
+    if (!getBlock(current).replaceable || isFluidSource(current)) return 'none';
+    const fluid: FluidKind = held === I.LAVA_BUCKET ? 'lava' : 'water';
+    this.world.setBlock(target.x, target.y, target.z, fluid === 'lava' ? B.LAVA : B.WATER);
+    this.emit({ type: 'bucket', fluid, filled: false });
+    if (survival) this.inventory.slots[this.inventory.selected] = { id: I.BUCKET, count: 1 };
+    return 'placed';
   }
 
   private interact(x: number, y: number, z: number, block: number): UseResult {
@@ -726,6 +777,12 @@ export class GameSession {
 
   private tick(): void {
     this.time++;
+    this.fluids.tick();
+    this.lavaCooldown = Math.max(0, this.lavaCooldown - 1);
+    if (this.alive && this.player.body.inLava && this.lavaCooldown === 0 && this.gameMode === 'survival') {
+      this.lavaCooldown = LAVA_DAMAGE_INTERVAL_TICKS;
+      this.hurtPlayer(LAVA_DAMAGE, 'death.lava');
+    }
     if (this.alive && this.gameMode === 'survival') {
       const before = this.stats.health;
       tickStats(this.stats, { headInWater: this.player.body.headInWater }, 1);

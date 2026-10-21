@@ -1,4 +1,5 @@
 import { B, IS_OPAQUE, allBlocks } from '../core/blocks';
+import { fluidHeight, isLava, isWater } from '../core/fluid';
 import { CHUNK_SIZE, SECTION_SIZE, WORLD_HEIGHT } from '../core/constants';
 import { localIndex, type Chunk } from '../core/chunk';
 import { tileIndex, tileUV } from './atlas';
@@ -51,6 +52,13 @@ for (const b of allBlocks()) {
   const names = [t.side, t.side, t.top, t.bottom, front, front];
   names.forEach((n, f) => (FACE_TILES[b.id * 6 + f] = tileIndex(n)));
 }
+// Fluid kind per block id (0 none, 1 water, 2 lava) and surface height inside the block.
+const FLUID_KIND = new Uint8Array(256);
+const FLUID_HEIGHT = new Float32Array(256);
+for (const b of allBlocks()) {
+  FLUID_KIND[b.id] = isWater(b.id) ? 1 : isLava(b.id) ? 2 : 0;
+  FLUID_HEIGHT[b.id] = fluidHeight(b.id);
+}
 const UV_CACHE = new Map<number, [number, number, number, number]>();
 function uvOf(tile: number) {
   let uv = UV_CACHE.get(tile);
@@ -98,7 +106,7 @@ class Builder {
 
 function faceVisible(id: number, neighbor: number, render: number): boolean {
   if (IS_OPAQUE[neighbor]) return false;
-  if (render === 3) return neighbor !== id; // water/ice: hide faces between the same fluid
+  if (render === 3) return FLUID_KIND[id] ? FLUID_KIND[neighbor] !== FLUID_KIND[id] : neighbor !== id; // hide faces inside one fluid
   if (neighbor === id && render === 2 && !IS_LEAVES[id]) return false; // glass-to-glass
   return true;
 }
@@ -128,6 +136,25 @@ const AO_OFFSETS: number[][][] = FACES.map((face) => {
   });
 });
 const FACE_OFFSETS = FACES.map((f) => f.n[0] + f.n[2] * P + f.n[1] * PP);
+
+/**
+ * Surface height at one top corner of a fluid block: the average of the same fluid in the four cells
+ * sharing that corner, or a full block if any of them has the same fluid above it.
+ * `cx`/`cz` are the corner's 0/1 offsets inside the block.
+ */
+function fluidCornerHeight(i: number, kind: number, cx: number, cz: number): number {
+  let sum = 0;
+  let n = 0;
+  for (let dz = cz - 1; dz <= cz; dz++)
+    for (let dx = cx - 1; dx <= cx; dx++) {
+      const j = i + dx + dz * P;
+      if (FLUID_KIND[padBlocks[j]] !== kind) continue;
+      if (FLUID_KIND[padBlocks[j + PP]] === kind) return 1;
+      sum += FLUID_HEIGHT[padBlocks[j]];
+      n++;
+    }
+  return sum / n;
+}
 
 function fillPadded(src: MeshSource, ox: number, oy: number, oz: number): void {
   if (src.getChunk) {
@@ -199,6 +226,8 @@ export function buildSectionMesh(src: MeshSource, cx: number, sy: number, cz: nu
   const corners: number[][] = [[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]];
   const shades = [0, 0, 0, 0];
   const ao = [0, 0, 0, 0];
+  // Top corner heights indexed by cornerX * 2 + cornerZ (all 1 for regular blocks).
+  const tops = [1, 1, 1, 1];
 
   for (let ly = 0; ly < SECTION_SIZE; ly++) {
     for (let lz = 0; lz < CHUNK_SIZE; lz++) {
@@ -214,7 +243,9 @@ export function buildSectionMesh(src: MeshSource, cx: number, sy: number, cz: nu
         }
 
         const target = render === 3 ? water : solid;
-        const waterTop = id === B.WATER && padBlocks[i + PP] !== B.WATER ? 0.875 : 1;
+        const kind = FLUID_KIND[id];
+        if (kind) for (let c = 0; c < 4; c++) tops[c] = fluidCornerHeight(i, kind, c >> 1, c & 1);
+        else tops[0] = tops[1] = tops[2] = tops[3] = 1;
 
         for (let f = 0; f < 6; f++) {
           const n = i + FACE_OFFSETS[f];
@@ -224,7 +255,7 @@ export function buildSectionMesh(src: MeshSource, cx: number, sy: number, cz: nu
             const c = face.v[v];
             const corner = corners[v];
             corner[0] = lx + c[0];
-            corner[1] = ly + oy + (c[1] === 1 ? waterTop : 0);
+            corner[1] = ly + oy + (c[1] === 1 ? tops[c[0] * 2 + c[2]] : 0);
             corner[2] = lz + c[2];
             let level = 3;
             if (render !== 3) {

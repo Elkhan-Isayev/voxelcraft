@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { B } from '../core/blocks';
+import { isLava, isWater } from '../core/fluid';
 import { PLAYER } from '../physics/player-physics';
 import type { GameSession } from '../game/session';
 import { ChunkRenderer } from './chunk-renderer';
@@ -120,14 +120,16 @@ export class GameRenderer {
     this.camera.updateProjectionMatrix();
 
     const camBlock = s.world.getBlock(Math.floor(eye.x), Math.floor(eye.y), Math.floor(eye.z));
-    const underwater = camBlock === B.WATER;
+    const underwater = isWater(camBlock);
+    const inLava = isLava(camBlock);
     const daylight = s.daylight();
-    this.sky.update(s.time, this.camera, dt, underwater);
+    this.sky.update(s.time, this.camera, dt, underwater || inLava);
+    if (inLava) this.sky.color.setRGB(0.75, 0.22, 0.02);
     this.uniforms.uDaylight.value = daylight;
     this.uniforms.uFogColor.value.copy(this.sky.color);
     const far = opts.renderDistance * 16;
-    this.uniforms.uFogNear.value = underwater ? 2 : far * 0.55;
-    this.uniforms.uFogFar.value = underwater ? 18 : far * 0.95;
+    this.uniforms.uFogNear.value = inLava ? 0.1 : underwater ? 2 : far * 0.55;
+    this.uniforms.uFogFar.value = inLava ? 2.5 : underwater ? 18 : far * 0.95;
     this.camera.far = far * 1.5 + 400;
 
     this.chunks.update(this.camera.position, meshBudgetMs);

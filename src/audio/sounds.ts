@@ -1,6 +1,6 @@
 import { getBlock } from '../core/blocks';
 
-export type SoundName = 'break' | 'place' | 'step' | 'hurt' | 'pickup' | 'explosion' | 'eat' | 'click' | 'hit' | 'toolBroke' | 'hiss';
+export type SoundName = 'break' | 'place' | 'step' | 'hurt' | 'pickup' | 'explosion' | 'eat' | 'click' | 'hit' | 'toolBroke' | 'hiss' | 'bucket';
 
 type Material = 'stone' | 'wood' | 'soil' | 'sand' | 'plant' | 'glass';
 
@@ -125,6 +125,11 @@ export class Sounds {
         break;
       case 'hiss':
         this.noise(5000, 0.5, 1.2, 0.25, 0, 'highpass');
+        break;
+      case 'bucket':
+        // A short slosh: two quick low-passed noise bursts.
+        this.noise(700, 1.5, 0.18, 0.35, 0, 'lowpass');
+        this.noise(500, 1.5, 0.22, 0.3, 0.08, 'lowpass');
         break;
     }
   }

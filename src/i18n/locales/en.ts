@@ -90,6 +90,7 @@ const en: Record<string, string> = {
   'death.mob': 'You were slain by {mob}',
   'death.explosion': 'You were blown up by {mob}',
   'death.void': 'You fell out of the world',
+  'death.lava': 'You tried to swim in lava',
   'death.generic': 'You died',
 
   // ---- Mobs ----
@@ -174,6 +175,8 @@ const en: Record<string, string> = {
   'block.cornflower': 'Cornflower',
   'block.clay': 'Clay',
   'block.tnt': 'TNT',
+  'block.water': 'Water',
+  'block.lava': 'Lava',
 
   // ---- Items ----
   'item.stick': 'Stick',
@@ -201,6 +204,9 @@ const en: Record<string, string> = {
   'item.gunpowder': 'Gunpowder',
   'item.brick': 'Brick',
   'item.clay_ball': 'Clay Ball',
+  'item.bucket': 'Bucket',
+  'item.water_bucket': 'Water Bucket',
+  'item.lava_bucket': 'Lava Bucket',
   'item.wooden_pickaxe': 'Wooden Pickaxe',
   'item.wooden_axe': 'Wooden Axe',
   'item.wooden_shovel': 'Wooden Shovel',

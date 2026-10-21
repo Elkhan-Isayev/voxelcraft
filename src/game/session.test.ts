@@ -4,6 +4,7 @@ import { CHUNK_SIZE } from '../core/constants';
 import { I } from '../core/items';
 import { createRng } from '../core/rng';
 import type { ChunkGenerator } from '../core/world';
+import { fluidId, fluidState, isWater } from '../core/fluid';
 import { createMob } from './mobs';
 import { GameSession, type SessionEvent } from './session';
 import type { MoveInput } from '../physics/player-physics';
@@ -357,5 +358,121 @@ describe('saving', () => {
     expect(restored.stats.food).toBe(11);
     expect(restored.time).toBe(777);
     expect(restored.meta.name).toBe('Test');
+  });
+});
+
+describe('fluids', () => {
+  const holdOnly = (s: GameSession, id: number, count = 1) => {
+    s.inventory.clear();
+    s.inventory.slots[0] = { id, count };
+    s.inventory.select(0);
+  };
+
+  test('water placed in the world flows as the session ticks', () => {
+    const s = newSession();
+    s.world.setBlock(3, 5, 0, B.WATER);
+    run(s, 0.2);
+    expect(s.world.getBlock(4, 5, 0)).toBe(B.AIR);
+    run(s, 0.2);
+    expect(isWater(s.world.getBlock(4, 5, 0))).toBe(true);
+    run(s, 3);
+    expect(fluidState(s.world.getBlock(10, 5, 0))?.level).toBe(7);
+  });
+
+  test('an empty bucket scoops up a water source', () => {
+    const s = newSession();
+    s.world.setBlock(0, 4, 0, B.WATER);
+    holdOnly(s, I.BUCKET);
+    lookDown(s);
+    expect(s.useItem()).toBe('filled');
+    expect(s.world.getBlock(0, 4, 0)).toBe(B.AIR);
+    expect(s.inventory.slots[0]).toEqual({ id: I.WATER_BUCKET, count: 1 });
+  });
+
+  test('filling one bucket from a stack keeps the rest', () => {
+    const s = newSession();
+    s.world.setBlock(0, 4, 0, B.LAVA);
+    holdOnly(s, I.BUCKET, 3);
+    lookDown(s);
+    s.useItem();
+    expect(s.inventory.slots[0]).toEqual({ id: I.BUCKET, count: 2 });
+    expect(s.inventory.count(I.LAVA_BUCKET)).toBe(1);
+  });
+
+  test('flowing water cannot be picked up', () => {
+    const s = newSession();
+    s.world.setBlock(0, 4, 0, fluidId('water', 3));
+    holdOnly(s, I.BUCKET);
+    lookDown(s);
+    expect(s.useItem()).toBe('none');
+    expect(s.inventory.slots[0]).toEqual({ id: I.BUCKET, count: 1 });
+  });
+
+  test('a water bucket places a source and becomes an empty bucket in survival', () => {
+    const s = newSession();
+    holdOnly(s, I.WATER_BUCKET);
+    lookDown(s);
+    expect(s.useItem()).toBe('placed');
+    expect(s.world.getBlock(0, 5, 0)).toBe(B.WATER);
+    expect(s.inventory.slots[0]).toEqual({ id: I.BUCKET, count: 1 });
+  });
+
+  test('buckets are not used up in creative', () => {
+    const s = newSession('creative');
+    holdOnly(s, I.LAVA_BUCKET);
+    lookDown(s);
+    expect(s.useItem()).toBe('placed');
+    expect(s.world.getBlock(0, 5, 0)).toBe(B.LAVA);
+    expect(s.inventory.slots[0]).toEqual({ id: I.LAVA_BUCKET, count: 1 });
+  });
+
+  test('standing in lava burns the player to death in survival', () => {
+    const s = newSession();
+    s.world.setBlock(0, 5, 0, B.LAVA);
+    const events = run(s, 1);
+    expect(s.stats.health).toBeLessThan(20);
+    expect(events.some((e) => e.type === 'hurt')).toBe(true);
+    const later = run(s, 5);
+    expect(s.alive).toBe(false);
+    expect(later.find((e) => e.type === 'death')).toMatchObject({ messageKey: 'death.lava' });
+  });
+
+  test('lava does not hurt in creative', () => {
+    const s = newSession('creative');
+    s.world.setBlock(0, 5, 0, B.LAVA);
+    run(s, 1);
+    expect(s.stats.health).toBe(20);
+  });
+
+  test('water washes away torches and drops them', () => {
+    const s = newSession();
+    s.player.body.x = -5.5;
+    s.world.setBlock(3, 5, 0, B.TORCH);
+    s.world.setBlock(2, 5, 0, B.WATER);
+    run(s, 0.4);
+    expect(isWater(s.world.getBlock(3, 5, 0))).toBe(true);
+    expect(s.items.some((it) => it.stack.id === B.TORCH)).toBe(true);
+  });
+
+  test('water pouring onto lava makes obsidian', () => {
+    const s = newSession();
+    s.player.body.x = -5.5;
+    s.world.setBlock(3, 5, 0, B.LAVA);
+    s.world.setBlock(3, 7, 0, B.WATER);
+    run(s, 1);
+    expect(s.world.getBlock(3, 5, 0)).toBe(B.OBSIDIAN);
+  });
+
+  test('water that was still flowing when saved keeps flowing after loading', () => {
+    const s = newSession();
+    s.world.setBlock(5, 5, 5, B.WATER);
+    run(s, 0.3);
+    expect(isWater(s.world.getBlock(6, 5, 5))).toBe(true);
+    const restored = GameSession.fromSave(JSON.parse(JSON.stringify(s.toSave())), { generator: flat, renderDistance: 2 });
+    restored.loadAllChunksNow();
+    restored.player.body.onGround = true;
+    expect(fluidState(restored.world.getBlock(6, 5, 5))?.level).toBe(1);
+    run(restored, 1);
+    expect(isWater(restored.world.getBlock(8, 5, 5))).toBe(true);
   });
 });

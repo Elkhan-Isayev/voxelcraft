@@ -4,6 +4,7 @@ import { CHUNK_SIZE } from '../core/constants';
 import { World, type ChunkGenerator } from '../core/world';
 import { createPlayerBody, stepPlayer, type MoveInput, PLAYER } from './player-physics';
 import { raycast } from './raycast';
+import { fluidId } from '../core/fluid';
 
 /** Flat world: solid stone up to y=4, so the walkable surface is y=5. */
 const flat: ChunkGenerator = {
@@ -152,6 +153,38 @@ describe('player physics', () => {
     expect(p.y).toBeGreaterThan(before);
   });
 
+  test('flowing and falling water count as water too', () => {
+    const w = makeWorld();
+    w.setBlock(0, 5, 0, fluidId('water', 4));
+    const p = createPlayerBody(0.5, 5, 0.5);
+    stepPlayer(w, p, idle, 0, 1 / 60);
+    expect(p.inWater).toBe(true);
+    expect(p.inLava).toBe(false);
+    w.setBlock(0, 5, 0, B.AIR);
+    w.setBlock(0, 6, 0, fluidId('water', 0, true));
+    const q = createPlayerBody(0.5, 5, 0.5);
+    stepPlayer(w, q, idle, 0, 1 / 60);
+    expect(q.headInWater).toBe(true);
+  });
+
+  test('lava is detected and is slower to move through than water', () => {
+    const w = makeWorld();
+    for (let x = -3; x <= 6; x++) for (let z = -3; z <= 3; z++) w.setBlock(x, 5, z, B.LAVA);
+    const p = createPlayerBody(0.5, 5, 0.5);
+    stepPlayer(w, p, idle, 0, 1 / 60);
+    expect(p.inLava).toBe(true);
+    expect(p.inWater).toBe(false);
+    simulate(w, p, { forward: 1 }, 1, -Math.PI / 2); // walk toward +X
+    const lavaDistance = p.x - 0.5;
+
+    const w2 = makeWorld();
+    for (let x = -3; x <= 6; x++) for (let z = -3; z <= 3; z++) w2.setBlock(x, 5, z, B.WATER);
+    const q = createPlayerBody(0.5, 5, 0.5);
+    simulate(w2, q, { forward: 1 }, 1, -Math.PI / 2);
+    expect(lavaDistance).toBeGreaterThan(0);
+    expect(lavaDistance).toBeLessThan(q.x - 0.5);
+  });
+
   test('flying ignores gravity and moves up and down', () => {
     const w = makeWorld();
     const p = createPlayerBody(0.5, 20, 0.5);
@@ -221,6 +254,14 @@ describe('raycast', () => {
     w.setBlock(0, 5, 0, B.WATER);
     const hit = raycast(w, { x: 0.5, y: 7.5, z: 0.5 }, { x: 0, y: -1, z: 0 }, 5);
     expect(hit?.y).toBe(4);
+  });
+
+  test('can optionally stop at fluid sources (for buckets), but not at flowing fluid', () => {
+    const w = makeWorld();
+    w.setBlock(0, 6, 0, fluidId('water', 2));
+    w.setBlock(0, 5, 0, B.LAVA);
+    const hit = raycast(w, { x: 0.5, y: 7.5, z: 0.5 }, { x: 0, y: -1, z: 0 }, 5, { fluidSources: true });
+    expect(hit).toMatchObject({ x: 0, y: 5, z: 0, ny: 1, block: B.LAVA });
   });
 
   test('works with negative coordinates and diagonal rays', () => {

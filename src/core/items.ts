@@ -109,8 +109,16 @@ for (const m of MATERIALS) {
   });
 }
 
+// Added after the tools so earlier item ids (stored in saves) do not shift.
+const fluidItems = {
+  BUCKET: item('bucket', { maxStack: 16 }),
+  WATER_BUCKET: item('water_bucket', { maxStack: 1 }),
+  LAVA_BUCKET: item('lava_bucket', { maxStack: 1 }),
+};
+
 export const I = {
   ...simple,
+  ...fluidItems,
   WOODEN_PICKAXE: tools.WOODEN_PICKAXE,
   WOODEN_AXE: tools.WOODEN_AXE,
   WOODEN_SHOVEL: tools.WOODEN_SHOVEL,

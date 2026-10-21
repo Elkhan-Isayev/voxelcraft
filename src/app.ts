@@ -1,4 +1,5 @@
-import { B, getBlock } from './core/blocks';
+import { getBlock } from './core/blocks';
+import { isWater } from './core/fluid';
 import { hashSeed } from './core/rng';
 import { Sounds } from './audio/sounds';
 import { i18n, detectLocale } from './i18n';
@@ -297,7 +298,7 @@ export class App {
     if (!s) return;
     const result = s.useItem(this.input.moveInput().sneak);
     if (result === 'opened') this.openInventory();
-    else if (result === 'placed' || result === 'ate') this.renderer.swing();
+    else if (result === 'placed' || result === 'filled' || result === 'ate') this.renderer.swing();
     else if (result === 'ignited') this.sounds.play('hiss');
   }
 
@@ -387,7 +388,7 @@ export class App {
     const sprinting = walking && move.sprint && move.forward > 0;
     this.renderer.render(dt, { fov: this.settings.fov, renderDistance: this.settings.renderDistance }, walking, sprinting);
     const eye = s.eyePosition();
-    const underwater = s.world.getBlock(Math.floor(eye.x), Math.floor(eye.y), Math.floor(eye.z)) === B.WATER;
+    const underwater = isWater(s.world.getBlock(Math.floor(eye.x), Math.floor(eye.y), Math.floor(eye.z)));
     this.hud.update(s, dt, this.fps, this.settings.showFps, underwater);
     this.inventory?.tick();
   }
@@ -426,6 +427,9 @@ export class App {
         break;
       case 'toolBroke':
         this.sounds.play('toolBroke');
+        break;
+      case 'bucket':
+        this.sounds.play('bucket');
         break;
       case 'death':
         this.state = 'dead';

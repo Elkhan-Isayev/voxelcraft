@@ -104,6 +104,20 @@ const leaves = (extra: BlockOpts = {}): BlockOpts => ({
 });
 const log = (name: string): BlockOpts =>
   wood(2, { textures: { side: `${name}_log`, top: `${name}_log_top` } });
+function fluid(kind: 'water' | 'lava'): BlockOpts {
+  return {
+    render: 'translucent',
+    solid: false,
+    fluid: true,
+    replaceable: true,
+    selectable: false,
+    lightOpacity: kind === 'water' ? 2 : 1,
+    lightEmission: kind === 'lava' ? 15 : 0,
+    hardness: -1,
+    noItem: true,
+    textures: kind,
+  };
+}
 const plant = (extra: BlockOpts = {}): BlockOpts => ({
   render: 'cross',
   solid: false,
@@ -119,16 +133,7 @@ export const B = {
   COBBLESTONE: def('cobblestone', stoneLike(2)),
   OAK_PLANKS: def('oak_planks', wood()),
   BEDROCK: def('bedrock', { hardness: -1 }),
-  WATER: def('water', {
-    render: 'translucent',
-    solid: false,
-    fluid: true,
-    replaceable: true,
-    selectable: false,
-    lightOpacity: 2,
-    hardness: -1,
-    noItem: true,
-  }),
+  WATER: def('water', fluid('water')),
   SAND: def('sand', soil(0.5, { gravity: true })),
   GRAVEL: def('gravel', soil(0.6, { gravity: true })),
   OAK_LOG: def('oak_log', log('oak')),
@@ -192,7 +197,18 @@ export const B = {
   CORNFLOWER: def('cornflower', plant()),
   CLAY: def('clay', soil(0.6)),
   TNT: def('tnt', { hardness: 0, textures: { side: 'tnt_side', top: 'tnt_top', bottom: 'tnt_bottom' } }),
+  LAVA: def('lava', fluid('lava')),
 } as const;
+
+// Flowing fluids store their level in the block id (no per-block metadata): index 1-7 = flow level,
+// index 8 = falling. Index 0 is the source block itself. Appended after B so existing ids stay stable.
+const flowIds = (kind: 'water' | 'lava', source: number): readonly number[] => [
+  source,
+  ...[1, 2, 3, 4, 5, 6, 7].map((l) => def(`flowing_${kind}_${l}`, fluid(kind))),
+  def(`falling_${kind}`, fluid(kind)),
+];
+export const WATER_IDS = flowIds('water', B.WATER);
+export const LAVA_IDS = flowIds('lava', B.LAVA);
 
 export type BlockId = number;
 

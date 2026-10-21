@@ -90,6 +90,7 @@ const ru: Record<string, string> = {
   'death.mob': 'Вас убил моб: {mob}',
   'death.explosion': 'Вас взорвал моб: {mob}',
   'death.void': 'Вы выпали из мира',
+  'death.lava': 'Вы пытались плавать в лаве',
   'death.generic': 'Вы погибли',
 
   // ---- Мобы ----
@@ -174,6 +175,8 @@ const ru: Record<string, string> = {
   'block.cornflower': 'Василёк',
   'block.clay': 'Глина',
   'block.tnt': 'Динамит',
+  'block.water': 'Вода',
+  'block.lava': 'Лава',
 
   // ---- Предметы ----
   'item.stick': 'Палка',
@@ -201,6 +204,9 @@ const ru: Record<string, string> = {
   'item.gunpowder': 'Порох',
   'item.brick': 'Кирпич',
   'item.clay_ball': 'Комок глины',
+  'item.bucket': 'Ведро',
+  'item.water_bucket': 'Ведро воды',
+  'item.lava_bucket': 'Ведро лавы',
   'item.wooden_pickaxe': 'Деревянная кирка',
   'item.wooden_axe': 'Деревянный топор',
   'item.wooden_shovel': 'Деревянная лопата',

@@ -49,6 +49,7 @@ shaped(['##', '##'], { '#': I.BRICK }, B.BRICKS);
 shaped(['##', '##'], { '#': I.CLAY_BALL }, B.CLAY);
 shaped(['##', '##'], { '#': B.SNOW_BLOCK }, B.ICE);
 shaped(['GSG', 'SGS', 'GSG'], { G: I.GUNPOWDER, S: B.SAND }, B.TNT);
+shaped(['# #', ' # '], { '#': I.IRON_INGOT }, I.BUCKET);
 
 // Storage blocks
 const storage: [number, number][] = [

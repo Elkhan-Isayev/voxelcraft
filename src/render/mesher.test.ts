@@ -1,4 +1,5 @@
 import { B } from '../core/blocks';
+import { fluidId } from '../core/fluid';
 import { World } from '../core/world';
 import { TerrainGenerator } from '../world/terrain';
 import { LightEngine } from '../world/light';
@@ -82,6 +83,43 @@ describe('mesher', () => {
       if (y < 4.5) maxLower = Math.max(maxLower, y);
     }
     expect(maxLower).toBe(4);
+  });
+
+  test('flowing water slopes down away from its source', () => {
+    const w = new FakeWorld().set(3, 3, 3, B.WATER).set(4, 3, 3, fluidId('water', 1)).set(5, 3, 3, fluidId('water', 2));
+    for (let x = 3; x <= 5; x++) w.set(x, 2, 3, B.STONE);
+    const mesh = buildSectionMesh(w, 0, 0, 0).water!;
+    const topByX = new Map<number, number>();
+    for (let i = 0; i < mesh.positions.length; i += 3) {
+      const [x, y] = [mesh.positions[i], mesh.positions[i + 1]];
+      if (y > 3) topByX.set(x, Math.max(topByX.get(x) ?? 0, y));
+    }
+    expect(topByX.get(3)).toBeCloseTo(3.875);
+    expect(topByX.get(4)!).toBeLessThan(topByX.get(3)!);
+    expect(topByX.get(5)!).toBeLessThan(topByX.get(4)!);
+    expect(topByX.get(6)!).toBeLessThan(topByX.get(5)!);
+    expect(topByX.get(6)!).toBeGreaterThan(3);
+  });
+
+  test('faces between a source and its flowing water are culled', () => {
+    const w = new FakeWorld().set(3, 3, 3, B.WATER).set(4, 3, 3, fluidId('water', 1));
+    w.set(3, 2, 3, B.STONE).set(4, 2, 3, B.STONE);
+    expect(quads(buildSectionMesh(w, 0, 0, 0).water)).toBe(4 + 4);
+  });
+
+  test('lava is meshed as a fluid, and water next to lava keeps the faces between them', () => {
+    const w = new FakeWorld().set(3, 3, 3, B.LAVA).set(4, 3, 3, B.WATER);
+    w.set(3, 2, 3, B.STONE).set(4, 2, 3, B.STONE);
+    const mesh = buildSectionMesh(w, 0, 0, 0);
+    expect(quads(mesh.water)).toBe(5 + 5);
+  });
+
+  test('falling water is drawn at full height', () => {
+    const w = new FakeWorld().set(3, 3, 3, fluidId('water', 0, true)).set(3, 2, 3, B.STONE);
+    const mesh = buildSectionMesh(w, 0, 0, 0).water!;
+    let top = 0;
+    for (let i = 1; i < mesh.positions.length; i += 3) top = Math.max(top, mesh.positions[i]);
+    expect(top).toBe(4);
   });
 
   test('plants are drawn as double-sided crosses', () => {

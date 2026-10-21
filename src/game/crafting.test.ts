@@ -83,4 +83,12 @@ describe('crafting', () => {
     const results = new Set(RECIPES.map((r) => r.result.id));
     for (const id of [I.WOODEN_SWORD, I.STONE_SHOVEL, I.IRON_PICKAXE, I.GOLDEN_AXE, I.DIAMOND_SWORD]) expect(results).toContain(id);
   });
+
+  test('three iron ingots in a V make a bucket; filled buckets do not stack', () => {
+    const i = s(I.IRON_INGOT);
+    expect(findRecipe([i, _, i, _, i, _, _, _, _], 3)?.result).toEqual({ id: I.BUCKET, count: 1 });
+    expect(getItem(I.BUCKET).maxStack).toBe(16);
+    expect(getItem(I.WATER_BUCKET).maxStack).toBe(1);
+    expect(getItem(I.LAVA_BUCKET).maxStack).toBe(1);
+  });
 });

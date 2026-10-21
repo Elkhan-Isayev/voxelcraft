@@ -90,6 +90,7 @@ const az: Record<string, string> = {
   'death.mob': 'Sizi {mob} öldürdü',
   'death.explosion': 'Sizi {mob} partlatdı',
   'death.void': 'Siz dünyadan kənara düşdünüz',
+  'death.lava': 'Siz lavada üzməyə çalışdınız',
   'death.generic': 'Siz öldünüz',
 
   // ---- Canlılar ----
@@ -174,6 +175,8 @@ const az: Record<string, string> = {
   'block.cornflower': 'Peyğəmbərçiçəyi',
   'block.clay': 'Gil',
   'block.tnt': 'TNT',
+  'block.water': 'Su',
+  'block.lava': 'Lava',
 
   // ---- Əşyalar ----
   'item.stick': 'Çubuq',
@@ -201,6 +204,9 @@ const az: Record<string, string> = {
   'item.gunpowder': 'Barıt',
   'item.brick': 'Kərpic',
   'item.clay_ball': 'Gil topası',
+  'item.bucket': 'Vedrə',
+  'item.water_bucket': 'Su vedrəsi',
+  'item.lava_bucket': 'Lava vedrəsi',
   'item.wooden_pickaxe': 'Taxta kirkə',
   'item.wooden_axe': 'Taxta balta',
   'item.wooden_shovel': 'Taxta bel',

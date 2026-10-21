@@ -1,4 +1,5 @@
-import { B, IS_SOLID } from '../core/blocks';
+import { IS_SOLID } from '../core/blocks';
+import { isLava, isWater } from '../core/fluid';
 import type { BlockQuery } from './raycast';
 
 export const PLAYER = {
@@ -29,6 +30,7 @@ export interface Body {
   height: number;
   onGround: boolean;
   inWater: boolean;
+  inLava: boolean;
   headInWater: boolean;
   horizontalCollision: boolean;
   flying: boolean;
@@ -71,6 +73,7 @@ export function createPlayerBody(x: number, y: number, z: number, width = PLAYER
     height,
     onGround: false,
     inWater: false,
+    inLava: false,
     headInWater: false,
     horizontalCollision: false,
     flying: false,
@@ -132,11 +135,11 @@ export function boxIntersectsSolid(world: BlockQuery, box: Box): boolean {
   return false;
 }
 
-function boxTouchesBlock(world: BlockQuery, box: Box, id: number): boolean {
+function boxTouchesBlock(world: BlockQuery, box: Box, test: (id: number) => boolean): boolean {
   for (let x = Math.floor(box.minX + EPS); x <= Math.floor(box.maxX - EPS); x++)
     for (let y = Math.floor(box.minY + EPS); y <= Math.floor(box.maxY - EPS); y++)
       for (let z = Math.floor(box.minZ + EPS); z <= Math.floor(box.maxZ - EPS); z++)
-        if (world.getBlock(x, y, z) === id) return true;
+        if (test(world.getBlock(x, y, z))) return true;
   return false;
 }
 
@@ -181,8 +184,10 @@ export function stepPlayer(
   p.vz = clampSpeed(p.vz);
   const waist = bodyBox(p);
   waist.maxY = p.y + Math.min(1, p.height * 0.55);
-  p.inWater = boxTouchesBlock(world, waist, B.WATER);
-  p.headInWater = world.getBlock(Math.floor(p.x), Math.floor(p.y + PLAYER.eyeHeight), Math.floor(p.z)) === B.WATER;
+  p.inWater = boxTouchesBlock(world, waist, isWater);
+  p.inLava = boxTouchesBlock(world, waist, isLava);
+  p.headInWater = isWater(world.getBlock(Math.floor(p.x), Math.floor(p.y + PLAYER.eyeHeight), Math.floor(p.z)));
+  const swimming = p.inWater || p.inLava;
 
   // ---- horizontal intent ----
   const fx = -Math.sin(yaw);
@@ -198,7 +203,7 @@ export function stepPlayer(
   }
   let speed: number;
   if (p.flying) speed = input.sprint ? PLAYER.flySprintSpeed : PLAYER.flySpeed;
-  else if (p.inWater) speed = Math.min(PLAYER.swimSpeed, walkSpeed ?? Infinity);
+  else if (swimming) speed = Math.min(PLAYER.swimSpeed, walkSpeed ?? Infinity) * (p.inLava && !p.inWater ? 0.5 : 1);
   else if (walkSpeed !== undefined) speed = walkSpeed;
   else if (input.sneak) speed = PLAYER.sneakSpeed;
   else if (input.sprint && input.forward > 0) speed = PLAYER.sprintSpeed;
@@ -207,7 +212,7 @@ export function stepPlayer(
   const hasInput = len > 0.01;
   let control: number;
   if (p.flying || p.onGround) control = 25;
-  else if (p.inWater) control = 8;
+  else if (swimming) control = 8;
   else control = hasInput ? 6 : 0.5;
   const k = 1 - Math.exp(-dt * control);
   p.vx += (mx * speed - p.vx) * k;
@@ -217,7 +222,7 @@ export function stepPlayer(
   if (p.flying) {
     const target = input.jump ? PLAYER.flyVerticalSpeed : input.sneak ? -PLAYER.flyVerticalSpeed : 0;
     p.vy += (target - p.vy) * (1 - Math.exp(-dt * 15));
-  } else if (p.inWater) {
+  } else if (swimming) {
     p.vy -= 8 * dt;
     if (input.jump) p.vy = Math.min(p.vy + 28 * dt, p.horizontalCollision ? 6 : 3);
     p.vy = Math.max(p.vy, -2);
@@ -246,7 +251,7 @@ export function stepPlayer(
 
   // ---- falling ----
   const events: StepEvents = { landed: false, fallDistance: 0 };
-  if (p.inWater || p.flying) p.fallDistance = 0;
+  if (swimming || p.flying) p.fallDistance = 0;
   else if (ay < 0) p.fallDistance -= ay;
   if (p.onGround && !wasOnGround) {
     events.landed = true;
