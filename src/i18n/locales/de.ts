@@ -26,6 +26,7 @@ const de: Record<string, string> = {
   'ui.fov': 'Sichtfeld: {value}°',
   'ui.sensitivity': 'Mausempfindlichkeit: {value}%',
   'ui.volume': 'Ton: {value}%',
+  'ui.music': 'Musik: {value}%',
   'ui.invertY': 'Maus invertieren',
   'ui.showFps': 'FPS anzeigen',
   'ui.on': 'An',

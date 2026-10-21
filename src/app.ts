@@ -1,7 +1,10 @@
 import { getBlock } from './core/blocks';
 import { isWater } from './core/fluid';
-import { hashSeed } from './core/rng';
+import { createRng, hashSeed } from './core/rng';
 import { Sounds } from './audio/sounds';
+import { MusicDirector } from './audio/music';
+import { MusicPlayer } from './audio/music-player';
+import { MobVoiceScheduler } from './audio/mob-voices';
 import { i18n, detectLocale } from './i18n';
 import { InputState, type InputAction } from './input/input-state';
 import { GameRenderer } from './render/renderer';
@@ -25,6 +28,11 @@ export class App {
   private settings: Settings;
   private readonly renderer: GameRenderer;
   private readonly sounds = new Sounds();
+  private readonly music = new MusicPlayer();
+  private readonly musicDirector = new MusicDirector(createRng(Date.now() >>> 0));
+  private readonly voices = new MobVoiceScheduler(createRng((Date.now() * 31) >>> 0));
+  /** Creepers currently hissing, so the hiss plays once per fuse. */
+  private readonly fusing = new Set<number>();
   private readonly hud: Hud;
   private readonly menus: Menus;
   private readonly input = new InputState();
@@ -47,6 +55,7 @@ export class App {
     i18n.setLocale(this.settings.locale);
     document.documentElement.lang = this.settings.locale;
     this.sounds.volume = this.settings.volume / 100;
+    this.music.setVolume(this.settings.music / 100);
 
     this.renderer = new GameRenderer(document.getElementById('game')!);
     initIcons(this.renderer.atlas.pixels, this.renderer.atlas.size);
@@ -90,6 +99,10 @@ export class App {
     saveSettings(this.storage, this.settings);
     if (patch.locale) i18n.setLocale(patch.locale);
     if (patch.volume !== undefined) this.sounds.volume = patch.volume / 100;
+    if (patch.music !== undefined) {
+      this.music.setVolume(patch.music / 100);
+      if (patch.music === 0) this.music.stop();
+    }
     if (patch.renderDistance !== undefined && this.session && !this.panorama) this.session.renderDistance = patch.renderDistance;
   }
 
@@ -126,6 +139,7 @@ export class App {
   }
 
   private enterWorld(session: GameSession): void {
+    this.restartMusic();
     this.session = session;
     this.panorama = false;
     this.renderer.attach(session);
@@ -143,6 +157,7 @@ export class App {
   }
 
   private quitToTitle(save: boolean): void {
+    this.restartMusic();
     if (save) this.save();
     this.closeInventory(false);
     document.exitPointerLock?.();
@@ -334,6 +349,34 @@ export class App {
     }
   }
 
+  // ---- music & ambience -----------------------------------------------------------
+
+  private restartMusic(): void {
+    this.music.stop();
+    this.musicDirector.reset();
+  }
+
+  private updateMusic(dt: number, s: GameSession): void {
+    const mood = this.panorama ? 'menu' : s.daylight() < 0.5 ? 'night' : 'day';
+    const piece = this.musicDirector.update(dt, mood);
+    const out = this.sounds.output();
+    if (piece && out && this.settings.music > 0 && !this.music.playing) this.music.play(piece, out);
+    this.music.update();
+  }
+
+  private updateMobSounds(dt: number, s: GameSession): void {
+    const eye = s.eyePosition();
+    const mobs = s.mobs.map((m) => ({ id: m.id, type: m.type, x: m.body.x, y: m.body.y, z: m.body.z, dead: m.dead }));
+    for (const v of this.voices.update(dt, mobs, eye)) this.sounds.mobVoice(v.type, 'ambient', v.volume);
+    for (const m of s.mobs) {
+      if (m.type !== 'creeper') continue;
+      if (m.fuse > 0 && !this.fusing.has(m.id)) {
+        this.fusing.add(m.id);
+        this.sounds.play('hiss');
+      } else if (m.fuse === 0) this.fusing.delete(m.id);
+    }
+  }
+
   // ---- frame loop ----------------------------------------------------------------
 
   private frame(now: number): void {
@@ -343,6 +386,7 @@ export class App {
     if (dt > 0) this.fps += (1 / dt - this.fps) * 0.05;
     const s = this.session;
     if (!s) return;
+    this.updateMusic(dt, s);
 
     if (this.panorama) {
       s.updateChunks(2);
@@ -377,6 +421,7 @@ export class App {
       s.update(dt, move, { attackHeld: this.attackHeld && this.state === 'playing' });
       s.updateChunks(2);
       for (const e of s.drainEvents()) this.onEvent(e);
+      this.updateMobSounds(dt, s);
       this.autosave += dt;
       if (this.autosave > AUTOSAVE_SECONDS) {
         this.autosave = 0;
@@ -425,6 +470,7 @@ export class App {
         break;
       case 'mobHurt':
         this.sounds.play('hit');
+        this.sounds.mobVoice(e.mob, 'hurt');
         break;
       case 'toolBroke':
         this.sounds.play('toolBroke');

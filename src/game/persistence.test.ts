@@ -99,6 +99,13 @@ describe('settings', () => {
     expect(s.locale).toBe('ru');
   });
 
+  test('has a separate music volume, clamped to 0-100', () => {
+    expect(DEFAULT_SETTINGS.music).toBe(50);
+    const storage = new MemoryStorage();
+    storage.setItem('voxelcraft.settings', JSON.stringify({ music: 250 }));
+    expect(loadSettings(storage, 'en').music).toBe(100);
+  });
+
   test('survives corrupt settings', () => {
     const storage = new MemoryStorage();
     storage.setItem('voxelcraft.settings', '{{{');

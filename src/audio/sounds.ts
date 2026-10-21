@@ -1,4 +1,5 @@
 import { getBlock } from '../core/blocks';
+import type { MobType } from '../game/mobs';
 
 export type SoundName = 'break' | 'place' | 'step' | 'hurt' | 'pickup' | 'explosion' | 'eat' | 'click' | 'hit' | 'toolBroke' | 'hiss' | 'bucket';
 
@@ -85,6 +86,79 @@ export class Sounds {
     osc.connect(g).connect(this.master!);
     osc.start(t);
     osc.stop(t + duration + 0.05);
+  }
+
+  /** The shared audio context and output, once unlocked (the music player plays through it too). */
+  output(): { ctx: AudioContext; destination: AudioNode } | null {
+    return this.ctx ? { ctx: this.ctx, destination: this.ctx.destination } : null;
+  }
+
+  /** A voice-like sound: a buzzy source swept from f0 to f1, shaped by formant filters. */
+  private voice(
+    f0: number,
+    f1: number,
+    duration: number,
+    gain: number,
+    formants: number[],
+    opts: { delay?: number; vibrato?: [number, number]; noise?: number } = {},
+  ): void {
+    const ctx = this.ready();
+    if (!ctx) return;
+    const t = ctx.currentTime + (opts.delay ?? 0);
+    const osc = ctx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(f0, t);
+    osc.frequency.exponentialRampToValueAtTime(f1, t + duration);
+    if (opts.vibrato) {
+      const lfo = ctx.createOscillator();
+      const depth = ctx.createGain();
+      lfo.frequency.value = opts.vibrato[0];
+      depth.gain.value = opts.vibrato[1];
+      lfo.connect(depth).connect(osc.frequency);
+      lfo.start(t);
+      lfo.stop(t + duration + 0.05);
+    }
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(0.0001, t);
+    env.gain.exponentialRampToValueAtTime(gain, t + 0.03);
+    env.gain.setValueAtTime(gain, t + duration * 0.6);
+    env.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+    for (const f of formants) {
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = f;
+      bp.Q.value = 5;
+      osc.connect(bp).connect(env);
+    }
+    env.connect(this.master!);
+    osc.start(t);
+    osc.stop(t + duration + 0.05);
+    if (opts.noise) this.noise(formants[0], 1, duration, opts.noise * gain, opts.delay ?? 0, 'lowpass');
+  }
+
+  /** Mob noises: pigs oink, cows moo, sheep baa, zombies groan. */
+  mobVoice(type: MobType, kind: 'ambient' | 'hurt', volume = 1): void {
+    const v = Math.max(0, Math.min(1, volume));
+    if (v === 0) return;
+    const hurt = kind === 'hurt';
+    switch (type) {
+      case 'pig':
+        this.voice(hurt ? 420 : 190, hurt ? 260 : 140, 0.14, 0.9 * v, [700, 1400]);
+        if (!hurt) this.voice(200, 150, 0.12, 0.7 * v, [700, 1400], { delay: 0.2 });
+        break;
+      case 'cow':
+        this.voice(hurt ? 150 : 115, hurt ? 100 : 92, hurt ? 0.35 : 1.1, 0.9 * v, [500, 1100], { vibrato: [5, 3] });
+        break;
+      case 'sheep':
+        this.voice(hurt ? 340 : 270, hurt ? 300 : 250, hurt ? 0.25 : 0.65, 0.8 * v, [800, 1700], { vibrato: [9, 14] });
+        break;
+      case 'zombie':
+        this.voice(hurt ? 115 : 85, hurt ? 70 : 62, hurt ? 0.35 : 1.3, 0.9 * v, [380, 900], { vibrato: [3, 4], noise: 0.4 });
+        break;
+      case 'creeper':
+        if (hurt) this.noise(300, 0.7, 0.15, 0.6 * v, 0, 'lowpass');
+        break;
+    }
   }
 
   play(name: SoundName, blockId = 1): void {

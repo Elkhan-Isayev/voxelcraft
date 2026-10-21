@@ -26,6 +26,7 @@ const ru: Record<string, string> = {
   'ui.fov': 'Поле зрения: {value}°',
   'ui.sensitivity': 'Чувствительность мыши: {value}%',
   'ui.volume': 'Звук: {value}%',
+  'ui.music': 'Музыка: {value}%',
   'ui.invertY': 'Инвертировать мышь',
   'ui.showFps': 'Показывать FPS',
   'ui.on': 'Вкл.',

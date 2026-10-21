@@ -26,6 +26,7 @@ const az: Record<string, string> = {
   'ui.fov': 'Görüş sahəsi: {value}°',
   'ui.sensitivity': 'Siçanın həssaslığı: {value}%',
   'ui.volume': 'Səs: {value}%',
+  'ui.music': 'Musiqi: {value}%',
   'ui.invertY': 'Siçanı tərsinə çevir',
   'ui.showFps': 'FPS göstər',
   'ui.on': 'Açıq',

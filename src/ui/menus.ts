@@ -191,6 +191,7 @@ export class Menus {
       ${this.slider('fov', 'ui.fov', s.fov, 50, 110)}
       ${this.slider('sensitivity', 'ui.sensitivity', s.sensitivity, 10, 200, 5)}
       ${this.slider('volume', 'ui.volume', s.volume, 0, 100, 5)}
+      ${this.slider('music', 'ui.music', s.music, 0, 100, 5)}
       ${toggle('invertY', 'ui.invertY')}
       ${toggle('showFps', 'ui.showFps')}
       <div class="hint">${this.t('ui.language')}</div>
@@ -206,7 +207,7 @@ export class Menus {
           input.addEventListener('input', () => {
             this.actions.updateSettings({ [input.dataset.s!]: Number(input.value) } as Partial<Settings>);
             const label = input.parentElement!.querySelector('.track')!;
-            const key = { renderDistance: 'ui.renderDistance', fov: 'ui.fov', sensitivity: 'ui.sensitivity', volume: 'ui.volume' }[input.dataset.s!]!;
+            const key = { renderDistance: 'ui.renderDistance', fov: 'ui.fov', sensitivity: 'ui.sensitivity', volume: 'ui.volume', music: 'ui.music' }[input.dataset.s!]!;
             label.textContent = this.i18n.t(key, { value: input.value });
             const min = Number(input.min);
             const max = Number(input.max);

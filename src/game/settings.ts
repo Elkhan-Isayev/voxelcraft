@@ -6,6 +6,7 @@ export interface Settings {
   fov: number;
   sensitivity: number;
   volume: number;
+  music: number;
   invertY: boolean;
   showFps: boolean;
   locale: LocaleCode;
@@ -16,16 +17,18 @@ export const DEFAULT_SETTINGS: Settings = {
   fov: 75,
   sensitivity: 100,
   volume: 60,
+  music: 50,
   invertY: false,
   showFps: false,
   locale: 'en',
 };
 
-const RANGES: Record<'renderDistance' | 'fov' | 'sensitivity' | 'volume', [number, number]> = {
+const RANGES: Record<'renderDistance' | 'fov' | 'sensitivity' | 'volume' | 'music', [number, number]> = {
   renderDistance: [2, 16],
   fov: [50, 110],
   sensitivity: [10, 200],
   volume: [0, 100],
+  music: [0, 100],
 };
 
 const KEY = 'voxelcraft.settings';
